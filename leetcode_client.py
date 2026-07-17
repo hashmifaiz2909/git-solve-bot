@@ -1,6 +1,7 @@
 import requests
 from urllib.parse import urlparse
 import markdownify
+import random
 
 def parse_slug(url_or_slug: str) -> str:
     """
@@ -69,6 +70,66 @@ def fetch_leetcode_problem(title_slug: str) -> dict:
         return question
     else:
         raise ValueError(f"Problem '{title_slug}' not found or API error: {data}")
+
+def fetch_all_problems(limit: int = 3000) -> list:
+    """
+    Fetches all available LeetCode problems with their slugs, difficulty, and paid status.
+    Returns a list of dicts with 'titleSlug', 'difficulty', 'paidOnly', 'title' keys.
+    """
+    url = "https://leetcode.com/graphql"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Content-Type": "application/json",
+        "Referer": "https://leetcode.com/problemset/"
+    }
+    query = """
+    query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
+      problemsetQuestionList: questionList(
+        categorySlug: $categorySlug
+        limit: $limit
+        skip: $skip
+        filters: $filters
+      ) {
+        total: totalNum
+        questions: data {
+          titleSlug
+          title
+          difficulty
+          paidOnly: isPaidOnly
+        }
+      }
+    }
+    """
+    payload = {
+        "query": query,
+        "variables": {
+            "categorySlug": "",
+            "limit": limit,
+            "skip": 0,
+            "filters": {}
+        }
+    }
+    response = requests.post(url, json=payload, headers=headers, timeout=15)
+    response.raise_for_status()
+    data = response.json()
+    questions = data.get("data", {}).get("problemsetQuestionList", {}).get("questions", [])
+    # Filter out paid-only questions
+    return [q for q in questions if not q.get("paidOnly", False)]
+
+def pick_random_problem(all_problems: list, exclude_slugs: set, difficulty: str = None) -> dict | None:
+    """
+    Picks a random unsolved problem from the list, optionally filtered by difficulty.
+    exclude_slugs: set of already-solved problem slugs.
+    difficulty: 'Easy', 'Medium', 'Hard', or None for any.
+    """
+    pool = [
+        p for p in all_problems
+        if p["titleSlug"] not in exclude_slugs
+        and (difficulty is None or p["difficulty"] == difficulty)
+    ]
+    if not pool:
+        return None
+    return random.choice(pool)
 
 if __name__ == "__main__":
     # Quick sanity test
