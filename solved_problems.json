@@ -22,6 +22,7 @@
     "merge-sorted-array",
     "merge-two-sorted-lists",
     "minimum-path-sum",
+    "minimum-window-substring",
     "n-queens",
     "next-permutation",
     "palindrome-number",
