@@ -1,6 +1,7 @@
 {
   "solved": [
     "3sum",
+    "3sum-closest",
     "4sum",
     "add-binary",
     "add-two-numbers",
