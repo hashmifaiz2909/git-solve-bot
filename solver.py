@@ -88,9 +88,9 @@ def generate_solution(problem_title: str, problem_description: str, difficulty: 
     4. The space complexity.
     """
     
-    # We use gemini-2.5-flash for fast and accurate code generation
+    # We use gemini-3.6-flash for fast and accurate code generation
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model='gemini-3.6-flash',
         contents=prompt,
         config=types.GenerateContentConfig(
             system_instruction=system_instruction,
