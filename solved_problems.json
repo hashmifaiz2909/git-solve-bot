@@ -42,6 +42,7 @@
     "unique-binary-search-trees-ii",
     "unique-paths-ii",
     "valid-parentheses",
-    "valid-sudoku"
+    "valid-sudoku",
+    "word-search"
   ]
 }
