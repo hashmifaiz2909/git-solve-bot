@@ -1,5 +1,6 @@
 {
   "solved": [
+    "3sum",
     "4sum",
     "add-binary",
     "add-two-numbers",
