@@ -22,6 +22,7 @@
     "longest-palindromic-substring",
     "maximal-rectangle",
     "merge-intervals",
+    "merge-k-sorted-lists",
     "merge-sorted-array",
     "merge-two-sorted-lists",
     "minimum-path-sum",
