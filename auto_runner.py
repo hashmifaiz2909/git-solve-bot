@@ -99,6 +99,10 @@ def solve_one(slug: str, lang: str, push: bool, repo_path: Path) -> bool:
     readme_file.write_text(readme_content, encoding="utf-8")
     print(f"{ts()} 💾 Saved solution and README to {problem_dir}")
 
+    # 6. Mark as solved
+    problem_tracker.mark_solved(slug)
+    print(f"{ts()} ✅ '{problem['title']}' marked as solved.")
+
     # 5. Push to GitHub
     if push:
         commit_message = (
@@ -106,30 +110,26 @@ def solve_one(slug: str, lang: str, push: bool, repo_path: Path) -> bool:
         )
         git = GitManager(str(repo_path))
 
-        if config.GITHUB_TOKEN and config.GITHUB_REPOSITORY:
-            print(f"{ts()} 🚀 Pushing via GitHub REST API...")
-            success = git.push_via_api(
-                filepaths=[str(solution_file), str(readme_file)],
-                message=commit_message,
-                repo_owner_and_name=config.GITHUB_REPOSITORY,
-                token=config.GITHUB_TOKEN,
-                branch=config.DEFAULT_BRANCH,
-            )
-            if not success:
-                print(f"{ts()} ⚠️  Push returned errors (files may still have been uploaded).")
-        else:
-            print(f"{ts()} 🚀 Pushing via local git...")
-            if not git.is_git_repo():
-                git.init_repo()
-            git.add_file(str(solution_file))
-            git.add_file(str(readme_file))
-            committed = git.commit(commit_message)
-            if committed:
-                git.push(config.DEFAULT_BRANCH)
-
-    # 6. Mark as solved
-    problem_tracker.mark_solved(slug)
-    print(f"{ts()} ✅ '{problem['title']}' marked as solved.")
+        print(f"{ts()} 🚀 Committing and pushing to GitHub...")
+        if not git.is_git_repo():
+            git.init_repo()
+        git.add_file(str(solution_file))
+        git.add_file(str(readme_file))
+        tracker_file = repo_path / "solved_problems.json"
+        if tracker_file.exists():
+            git.add_file(str(tracker_file))
+        committed = git.commit(commit_message)
+        if committed:
+            pushed = git.push(config.DEFAULT_BRANCH)
+            if not pushed and config.GITHUB_TOKEN and config.GITHUB_REPOSITORY:
+                print(f"{ts()} Local push skipped or failed, trying GitHub REST API...")
+                git.push_via_api(
+                    filepaths=[str(solution_file), str(readme_file)],
+                    message=commit_message,
+                    repo_owner_and_name=config.GITHUB_REPOSITORY,
+                    token=config.GITHUB_TOKEN,
+                    branch=config.DEFAULT_BRANCH,
+                )
     return True
 
 
@@ -224,6 +224,11 @@ def main():
                 failed_streak = 0
                 print(f"{ts()} 📊 Progress: {solved_count} solved this session | {len(solved_slugs) + 1} total solved")
         except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                print(f"{ts()} ⏳ Gemini API rate limit hit. Waiting 45s before retrying...")
+                time.sleep(45)
+                continue
             failed_streak += 1
             print(f"{ts()} ❌ Error solving '{slug}': {e}")
             traceback.print_exc()
